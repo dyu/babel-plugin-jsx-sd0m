@@ -1,7 +1,7 @@
 {
   "name": "babel-plugin-jsx-sd0m",
   "description": "A mod based from babel-plugin-jsx-dom-expressions",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": "dyu",
   "license": "MIT",
   "repository": {
