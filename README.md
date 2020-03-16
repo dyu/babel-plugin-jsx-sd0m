@@ -1,4 +1,4 @@
-This mod customizes how attributes are set. It uses the helper lib from [dyu/sd0m]. 
+This mod customizes how attributes are set. It uses the helper lib from [sd0m](https://github.com/dyu/sd0m). 
 
 # Babel Plugin JSX DOM Expressions
 
