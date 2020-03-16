@@ -14,7 +14,7 @@ const template = (
       style={({ backgroundColor: color })}
       classList={({ selected: selected })}
     >
-      <a href={'/'} ref={link}>Welcome</a>
+      <a href={'/'} ref={link} visible={true} draggable={true}>Welcome</a>
     </h1>
   </div>
 );

@@ -1,4 +1,7 @@
 import { template as _$template } from "r-dom";
+import { setEnumeratedAttr as _$setEnumeratedAttr } from "r-dom";
+import { setBooleanAttr as _$setBooleanAttr } from "r-dom";
+import { setOrRemoveAttr as _$setOrRemoveAttr } from "r-dom";
 import { wrap as _$wrap } from "r-dom";
 import { spread as _$spread } from "r-dom";
 import { classList as _$classList } from "r-dom";
@@ -31,7 +34,7 @@ const template = function () {
 
   _$spread(_el$2, results);
 
-  _$wrap(() => _el$2.title = welcoming);
+  _$wrap(() => _$setOrRemoveAttr(_el$2, "title", welcoming));
 
   _$wrap(() => Object.assign(_el$2.style, {
     backgroundColor: color
@@ -43,7 +46,11 @@ const template = function () {
 
   link = _el$3;
 
-  _el$3.setAttribute("href", '/');
+  _$setOrRemoveAttr(_el$3, "href", '/');
+
+  _$setBooleanAttr(_el$3, "visible", true);
+
+  _$setEnumeratedAttr(_el$3, "draggable", true);
 
   return _el$;
 }();

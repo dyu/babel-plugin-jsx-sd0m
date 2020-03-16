@@ -2,10 +2,12 @@ import SyntaxJSX from '@babel/plugin-syntax-jsx';
 import { addNamed } from "@babel/helper-module-imports";
 import { Attributes, NonComposedEvents } from 'dom-expressions';
 import VoidElements from './VoidElements';
+import { isBooleanAttr, isEnumeratedAttr, mustUseProp } from './attr-util'
 
 export default (babel) => {
   const { types: t } = babel;
   let moduleName = 'dom',
+    attrsModuleName = 'ss0',
     delegateEvents = true,
     builtIns = [],
     alwaysCreateComponents = false,
@@ -16,10 +18,10 @@ export default (babel) => {
     return e[0] === '(' && e[e.length - 1]=== ')';
   }
 
-  function registerImportMethod(path, name) {
+  function registerImportMethod(path, name, importName) {
     const imports = path.scope.getProgramParent().data.imports || (path.scope.getProgramParent().data.imports = new Set());
     if (!imports.has(name)) {
-      addNamed(path, name, moduleName, { nameHint: `_$${name}` });
+      addNamed(path, name, importName || moduleName, { nameHint: `_$${name}` });
       imports.add(name);
     }
   }
@@ -63,7 +65,7 @@ export default (babel) => {
     }
   }
 
-  function setAttr(path, elem, name, value) {
+  function setAttr(path, tagName, elem, name, value) {
     if (name === 'style') {
       return t.callExpression(
         t.memberExpression(t.identifier("Object"), t.identifier('assign')),
@@ -72,13 +74,32 @@ export default (babel) => {
     }
 
     if (name === 'classList') {
-      registerImportMethod(path, 'classList');
+      registerImportMethod(path, 'classList', attrsModuleName);
       return t.callExpression(
         t.identifier('_$classList'),
         [elem, value]
       );
     }
-
+    
+    if (isBooleanAttr(name)) {
+      registerImportMethod(path, 'setBooleanAttr', attrsModuleName);
+      return t.callExpression(
+        t.identifier('_$setBooleanAttr'),
+        [elem, t.stringLiteral(name), value]
+      );
+    }
+    
+    if (isEnumeratedAttr(name)) {
+      registerImportMethod(path, 'setEnumeratedAttr', attrsModuleName);
+      return t.callExpression(
+        t.identifier('_$setEnumeratedAttr'),
+        [elem, t.stringLiteral(name), value]
+      );
+    }
+    
+    if (mustUseProp(tagName, name))
+      return t.assignmentExpression('=', t.memberExpression(elem, t.identifier(name)), value);
+    
     let isAttribute = name.indexOf('-') > -1,
       attribute = Attributes[name];
     if (attribute)
@@ -86,16 +107,22 @@ export default (babel) => {
         isAttribute = true;
       else name = attribute.alias;
 
-    if (isAttribute)
-      return t.callExpression(t.memberExpression(elem, t.identifier("setAttribute")), [t.stringLiteral(name), value]);
+    if (!attribute || isAttribute) {
+      registerImportMethod(path, 'setOrRemoveAttr', attrsModuleName);
+      return t.callExpression(
+        t.identifier('_$setOrRemoveAttr'),
+        [elem, t.stringLiteral(name), value]
+      );
+    }
+    
     return t.assignmentExpression('=', t.memberExpression(elem, t.identifier(name)), value);
   }
 
-  function setAttrExpr(path, elem, name, value) {
+  function setAttrExpr(path, tagName, elem, name, value) {
     registerImportMethod(path, 'wrap');
     return t.expressionStatement(t.callExpression(
       t.identifier("_$wrap"),
-      [t.arrowFunctionExpression([], setAttr(path, elem, name, value))]
+      [t.arrowFunctionExpression([], setAttr(path, tagName, elem, name, value))]
     ));
   }
 
@@ -260,7 +287,7 @@ export default (babel) => {
     return { exprs, template: '', component: true }
   }
 
-  function transformAttributes(path, jsx, results) {
+  function transformAttributes(path, tagName, jsx, results) {
     let elem = results.id;
     const spread = t.identifier('_$spread');
     jsx.openingElement.attributes.forEach(attribute => {
@@ -293,9 +320,9 @@ export default (babel) => {
           	results.exprs.push(t.expressionStatement(t.callExpression(t.memberExpression(elem, t.identifier('addEventListener')), [t.stringLiteral(prop.key.name || prop.key.value), prop.value])))
           );
         } else if (!value || checkParens(value, path)) {
-          results.exprs.push(setAttrExpr(path, elem, key, value.expression));
+          results.exprs.push(setAttrExpr(path, tagName, elem, key, value.expression));
         } else {
-          results.exprs.push(t.expressionStatement(setAttr(path, elem, key, value.expression)));
+          results.exprs.push(t.expressionStatement(setAttr(path, tagName, elem, key, value.expression)));
         }
       } else {
         results.template += ` ${key}`;
@@ -367,7 +394,7 @@ export default (babel) => {
       if (tagName !== tagName.toLowerCase()) return generateComponent(path, jsx, opts);
       let results = { template: `<${tagName}`, decl: [], exprs: [] };
       if (!info.skipId) results.id = path.scope.generateUidIdentifier("el$");
-      transformAttributes(path, jsx, results);
+      transformAttributes(path, tagName, jsx, results);
       if (contextToCustomElements && (tagName === 'slot' || tagName.indexOf('-') > -1)) {
         registerImportMethod(path, 'currentContext');
         results.exprs.push(t.expressionStatement(t.assignmentExpression(
@@ -405,6 +432,7 @@ export default (babel) => {
     visitor: {
       JSXElement: (path, { opts }) => {
         if ('moduleName' in opts) moduleName = opts.moduleName;
+        if ('attrsModuleName' in opts) attrsModuleName = opts.attrsModuleName;
         if ('delegateEvents' in opts) delegateEvents = opts.delegateEvents;
         if ('contextToCustomElements' in opts) contextToCustomElements = opts.contextToCustomElements;
         if ('alwaysCreateComponents' in opts) alwaysCreateComponents = opts.alwaysCreateComponents;
@@ -419,6 +447,7 @@ export default (babel) => {
       },
       JSXFragment: (path, { opts }) => {
         if ('moduleName' in opts) moduleName = opts.moduleName;
+        if ('attrsModuleName' in opts) attrsModuleName = opts.attrsModuleName;
         if ('delegateEvents' in opts) delegateEvents = opts.delegateEvents;
         if ('contextToCustomElements' in opts) contextToCustomElements = opts.contextToCustomElements;
         if ('alwaysCreateComponents' in opts) alwaysCreateComponents = opts.alwaysCreateComponents;

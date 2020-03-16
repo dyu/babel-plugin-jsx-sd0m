@@ -1,6 +1,7 @@
 import { template as _$template } from "r-dom";
 import { wrap as _$wrap } from "r-dom";
 import { currentContext as _$currentContext } from "r-dom";
+import { setOrRemoveAttr as _$setOrRemoveAttr } from "r-dom";
 
 const _tmpl$ = _$template(`<my-element></my-element>`),
       _tmpl$2 = _$template(`<my-element><header slot="head">Title</header></my-element>`),
@@ -9,9 +10,10 @@ const _tmpl$ = _$template(`<my-element></my-element>`),
 const template = function () {
   const _el$ = _tmpl$.content.firstChild.cloneNode(true);
 
-  _el$.setAttribute("some-attr", state.name);
+  _$setOrRemoveAttr(_el$, "some-attr", state.name);
 
-  _el$.someProp = state.data;
+  _$setOrRemoveAttr(_el$, "someProp", state.data);
+
   _el$._context = _$currentContext();
   return _el$;
 }();
@@ -19,9 +21,9 @@ const template = function () {
 const template2 = function () {
   const _el$2 = _tmpl$.content.firstChild.cloneNode(true);
 
-  _$wrap(() => _el$2.setAttribute("some-attr", state.name));
+  _$wrap(() => _$setOrRemoveAttr(_el$2, "some-attr", state.name));
 
-  _$wrap(() => _el$2.someProp = state.data);
+  _$wrap(() => _$setOrRemoveAttr(_el$2, "someProp", state.data));
 
   _el$2._context = _$currentContext();
   return _el$2;

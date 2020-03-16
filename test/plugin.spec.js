@@ -6,6 +6,7 @@ pluginTester({
   plugin,
   pluginOptions: {
     moduleName: 'r-dom',
+    attrsModuleName: 'r-dom',
     builtIns: ['For'],
     delegateEvents: true,
     alwaysCreateComponents: false,
