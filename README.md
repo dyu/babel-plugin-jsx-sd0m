@@ -1,3 +1,5 @@
+This mod customizes how attributes are set. It uses the helper lib from [dyu/sd0m]. 
+
 # Babel Plugin JSX DOM Expressions
 
 [![Build Status](https://img.shields.io/travis/com/ryansolid/babel-plugin-jsx-dom-expressions.svg?style=flat)](https://travis-ci.com/ryansolid/babel-plugin-jsx-dom-expressions)

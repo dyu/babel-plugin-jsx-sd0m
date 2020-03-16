@@ -1,12 +1,12 @@
 {
-  "name": "babel-plugin-jsx-dom-expressions",
+  "name": "babel-plugin-jsx-sd0m",
   "description": "A JSX to DOM plugin that wraps expressions for fine grained change detection",
-  "version": "0.11.0",
-  "author": "Ryan Carniato",
+  "version": "0.0.0",
+  "author": "dyu",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ryansolid/babel-plugin-jsx-dom-expressions"
+    "url": "https://github.com/dyu/babel-plugin-jsx-sd0m"
   },
   "readmeFilename": "README.md",
   "main": "index.js",
