@@ -7,7 +7,7 @@ import { isBooleanAttr, isEnumeratedAttr, mustUseProp } from './attr-util'
 export default (babel) => {
   const { types: t } = babel;
   let moduleName = 'dom',
-    attrsModuleName = 'ss0',
+    attrsModuleName = 'sd0m',
     delegateEvents = true,
     builtIns = [],
     alwaysCreateComponents = false,
