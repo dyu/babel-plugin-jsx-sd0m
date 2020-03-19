@@ -15,6 +15,7 @@ const template = (
       classList={({ selected: selected })}
     >
       <a href={'/'} ref={link} visible={true} draggable={true}>Welcome</a>
+      <input $value={ console.log } value={ welcoming } />
     </h1>
   </div>
 );
