@@ -65,7 +65,14 @@ export default (babel) => {
     }
   }
 
-  function setAttr(path, tagName, elem, name, value) {
+  function setAttr(path, tagName, elem, name, value, delegate) {
+    if (delegate) {
+      return t.callExpression(
+        delegate.expression,
+        [elem, t.stringLiteral(name), value]
+      );
+    }
+    
     if (name === 'style') {
       return t.callExpression(
         t.memberExpression(t.identifier("Object"), t.identifier('assign')),
@@ -118,11 +125,11 @@ export default (babel) => {
     return t.assignmentExpression('=', t.memberExpression(elem, t.identifier(name)), value);
   }
 
-  function setAttrExpr(path, tagName, elem, name, value) {
+  function setAttrExpr(path, tagName, elem, name, value, delegate) {
     registerImportMethod(path, 'wrap');
     return t.expressionStatement(t.callExpression(
       t.identifier("_$wrap"),
-      [t.arrowFunctionExpression([], setAttr(path, tagName, elem, name, value))]
+      [t.arrowFunctionExpression([], setAttr(path, tagName, elem, name, value, delegate))]
     ));
   }
 
@@ -289,6 +296,8 @@ export default (babel) => {
 
   function transformAttributes(path, tagName, jsx, results) {
     let elem = results.id;
+    let delegateMap = Object.create(null);
+    let attrs = []
     const spread = t.identifier('_$spread');
     jsx.openingElement.attributes.forEach(attribute => {
       if (t.isJSXSpreadAttribute(attribute)) {
@@ -308,6 +317,8 @@ export default (babel) => {
           results.exprs.unshift(t.expressionStatement(t.assignmentExpression("=", value.expression, elem)));
         } else if (key === 'forwardRef') {
           results.exprs.unshift(t.expressionStatement(t.logicalExpression('&&', value.expression, t.callExpression(value.expression, [elem]))));
+        } else if (key.startsWith('$')) {
+            delegateMap[key.substring(1)] = value;
         } else if (key.startsWith("on")) {
           const ev = toEventName(key);
           if (delegateEvents && key !== key.toLowerCase() && !NonComposedEvents.has(ev)) {
@@ -319,16 +330,22 @@ export default (babel) => {
           value.expression.properties.forEach(prop =>
           	results.exprs.push(t.expressionStatement(t.callExpression(t.memberExpression(elem, t.identifier('addEventListener')), [t.stringLiteral(prop.key.name || prop.key.value), prop.value])))
           );
-        } else if (!value || checkParens(value, path)) {
-          results.exprs.push(setAttrExpr(path, tagName, elem, key, value.expression));
         } else {
-          results.exprs.push(t.expressionStatement(setAttr(path, tagName, elem, key, value.expression)));
+          attrs.push({ reactive: !value || checkParens(value, path), key, value });
         }
       } else {
         results.template += ` ${key}`;
         if (value) results.template += `="${value.value}"`;
       }
     });
+    
+    for (let attr of attrs) {
+        if (attr.reactive) {
+            results.exprs.push(setAttrExpr(path, tagName, elem, attr.key, attr.value.expression, delegateMap[attr.key]));
+        } else {
+            results.exprs.push(t.expressionStatement(setAttr(path, tagName, elem, attr.key, attr.value.expression, delegateMap[attr.key])));
+        }
+    }
   }
 
   function transformChildren(path, jsx, opts, results) {
